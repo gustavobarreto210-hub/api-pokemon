@@ -3,7 +3,7 @@ import httpx
 
 app = FastAPI(title="POKEDEX-API")
 
-POKEAPI_URL = "https://pokeapi.co/api/v2"
+POKEAPI_URL = "https://pokeapidjshfwueif.co/api/v2"
 
 
 @app.get("/")
@@ -18,6 +18,8 @@ async def buscar_pokemon(nome: str):
 
     if resposta.status_code == 404:
         raise HTTPException(status_code=404, detail="Pokémon não encontrado")
+    else:
+        raise HTTPException(status_code=500, detail="Erro no servidor, por favor tente novamente mais tarde.")
 
     dados = resposta.json()
 
@@ -33,3 +35,4 @@ async def buscar_pokemon(nome: str):
         ],
         "imagem": dados["sprites"]["front_default"]
     }
+
