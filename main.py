@@ -3,7 +3,7 @@ import httpx
 
 app = FastAPI(title="POKEDEX-API")
 
-POKEAPI_URL = "https://pokeapidjshfwueif.co/api/v2"
+POKEAPI_URL = "https://pokeapi.co/api/v2"
 
 
 @app.get("/")
