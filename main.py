@@ -31,6 +31,6 @@ async def buscar_pokemon(nome: str):
             habilidade["ability"]["name"]
             for habilidade in dados["abilities"]
         ],
-        "imagem": dados["sprites"]["front_default"]
+        "imagem": dados["sprites"]["other"]["official-artwork"]["front_default"]
     }
 

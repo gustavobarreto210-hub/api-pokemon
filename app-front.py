@@ -1,5 +1,6 @@
 from pathlib import Path
 import base64
+from fastapi import background
 import requests
 import streamlit as st
 
@@ -48,39 +49,69 @@ def adicionar_background():
         }}
 
         .stTextInput input {{
-            background: rgba(255,255,255,0.90);
-            color: black;
-            border-radius: 12px;
+            background: rgba(255,255,255,.92);
+            border-radius:14px;
+            height:55px;
+            font-size:20px;
+            text-align:center;
+            font-weight:bold;
         }}
 
         .stButton > button {{
-            width: 100%;
-            height: 45px;
-            background: #FFCB05;
-            color: black;
-            border: none;
-            border-radius: 10px;
-            font-weight: bold;
-            transition: .3s;
+            width:100%;
+            height:55px;
+            font-size:18px;
+            border-radius:14px;
+            background:#ffcb05;
+            color:#222;
+            font-weight:bold;
+            transition:.25s;
         }}
 
         .stButton > button:hover {{
-            background: #2A75BB;
-            color: white;
+            background:#2a75bb;
+            color:white;
+            transform:scale(1.02);
         }}
 
         .pokemon-card {{
-            background: rgba(0,0,0,.70);
-            backdrop-filter: blur(15px);
-            border: 3px solid #FFCB05;
-            border-radius: 20px;
-            padding: 30px;
-            max-width: 420px;
-            margin: 30px auto;
-            text-align: center;
-            box-shadow: 0 0 25px rgba(255,203,5,.4);
-        }}
+            background:rgba(15,15,15,.72);
 
+            backdrop-filter:blur(18px);
+
+            border:3px solid #ffcb05;
+
+            border-radius:25px;
+
+            padding:35px;
+
+            margin-top:35px;
+
+             box-shadow:0 0 40px rgba(255,203,5,.45);
+        }}
+        .badge{{
+
+            display:inline-block;
+
+            background:#ffcb05;
+
+            color:black;
+
+            font-weight:bold;
+
+            padding:6px 14px;
+
+            margin:4px;
+
+            border-radius:999px;
+                
+        }}
+        .info-box{{
+            background:rgba(255,255,255,.08);
+            border-radius:15px;
+            padding:15px;
+            text-align:center;
+        }}
         </style>
         """,
         unsafe_allow_html=True
@@ -88,9 +119,18 @@ def adicionar_background():
 
 adicionar_background()
 
-st.title("⚡ Pokédex")
+st.markdown(
+    """
+    <h1 style='text-align:center;font-size:55px;'>
+        ⚡ Pokédex
+    </h1>
 
-st.write("Digite o nome de um Pokémon para consultar sua API FastAPI.")
+    <h4 style='text-align:center;color:white;'>
+        Pesquise qualquer Pokémon
+    </h4>
+    """,
+    unsafe_allow_html=True
+)
 
 nome = st.text_input(
     "Nome do Pokémon",
@@ -108,7 +148,9 @@ if st.button("Buscar Pokémon"):
                 f"{API_URL}/pokemon/{nome.lower().strip()}",
                 timeout=10
             )
-
+        except requests.RequestException:
+            st.error("Erro ao consultar a API.")
+        else:
             if resposta.status_code == 404:
                 st.error("Pokémon não encontrado.")
 
@@ -118,69 +160,80 @@ if st.button("Buscar Pokémon"):
             else:
                 pokemon = resposta.json()
 
-                # Card de resultado
                 st.markdown("<div class='pokemon-card'>", unsafe_allow_html=True)
 
-                st.markdown(
-                    f"""
-                    <h1 style="text-align:center; color:white;">
-                        {pokemon['nome'].capitalize()}
-                    </h1>
-                    """,
-                    unsafe_allow_html=True
-                )
-
-                # Imagem centralizada
-                col1, col2, col3 = st.columns([1, 2, 1])
-
-                with col2:
-                    st.image(
-                        pokemon["imagem"],
-                        width=220
-                    )
-
-                st.divider()
-
-                # Informações
-                col1, col2 = st.columns(2)
-
-                with col1:
-                    st.metric(
-                        label="🆔 ID",
-                        value=pokemon["id"]
-                    )
-
-                    st.metric(
-                        label="📏 Altura",
-                        value=pokemon["altura"]
-                    )
-
-                with col2:
-                    st.metric(
-                        label="⚖️ Peso",
-                        value=pokemon["peso"]
-                    )
-
-                    st.metric(
-                        label="🏷️ Tipos",
-                        value=", ".join(
-                            tipo.capitalize()
-                            for tipo in pokemon["tipos"]
-                        )
-                    )
-
-                st.markdown("### ✨ Habilidades")
-
-                for habilidade in pokemon["habilidades"]:
-                    st.write(f"• {habilidade.capitalize()}")
-
-                st.markdown("</div>", unsafe_allow_html=True)
-
-        except requests.exceptions.ConnectionError:
-            st.error(
-                "Não foi possível conectar à API FastAPI.\n\n"
-                "Verifique se ela está rodando."
+            st.markdown(
+            f"""
+                <h1 style="text-align:center;">
+                     {pokemon['nome'].capitalize()}
+                </h1>
+                 """,
+                unsafe_allow_html=True
             )
 
-        except requests.exceptions.Timeout:
-            st.error("A consulta demorou muito. Tente novamente.")
+c1, c2, c3 = st.columns([1,2,1])
+
+with c2:
+    st.image(
+        pokemon["imagem"],
+        width=260
+    )
+
+st.markdown("---")
+
+col1, col2 = st.columns(2)
+
+with col1:
+
+    st.markdown(
+        f"""
+        <div class='info-box'>
+        <h4>ID</h4>
+        <h2>{pokemon['id']}</h2>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    st.markdown(
+        f"""
+        <div class='info-box'>
+        <h4>Altura</h4>
+        <h2>{pokemon['altura']}</h2>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+with col2:
+
+    st.markdown(
+        f"""
+        <div class='info-box'>
+        <h4>Peso</h4>
+        <h2>{pokemon['peso']}</h2>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    st.markdown(
+        f"""
+        <div class='info-box'>
+        <h4>Tipo</h4>
+        <h2>{', '.join(pokemon['tipos']).title()}</h2>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+st.markdown("## ✨ Habilidades")
+
+habilidades = ""
+
+for habilidade in pokemon["habilidades"]:
+    habilidades += f"<span class='badge'>{habilidade.title()}</span>"
+
+st.markdown(habilidades, unsafe_allow_html=True)
+
+st.markdown("</div>", unsafe_allow_html=True)
