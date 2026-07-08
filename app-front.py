@@ -12,54 +12,34 @@ st.set_page_config(
 API_URL = "http://127.0.0.1:8000"
 
 BASE_DIR = Path(__file__).parent
-VIDEO_PATH = BASE_DIR / "assets" / "pokemon.mp4"
+IMAGE_PATH = BASE_DIR / "assets" / "pokemon.jpg"
 
 
 def adicionar_background():
-    if not VIDEO_PATH.exists():
-        st.error(f"Vídeo não encontrado em: {VIDEO_PATH}")
+
+    if not IMAGE_PATH.exists():
+        st.error(f"Imagem não encontrada em: {IMAGE_PATH}")
         st.stop()
 
-    with open(VIDEO_PATH, "rb") as video:
-        video_base64 = base64.b64encode(video.read()).decode()
+    with open(IMAGE_PATH, "rb") as img:
+        img_base64 = base64.b64encode(img.read()).decode()
 
     st.markdown(
         f"""
         <style>
+
         .stApp {{
-            background: transparent;
-        }}
+            background:
+                linear-gradient(
+                    rgba(0,0,0,0.55),
+                    rgba(0,0,0,0.55)
+                ),
+                url("data:image/jpeg;base64,{img_base64}");
 
-        #video-background {{
-            position: fixed;
-
-            top: 50%;
-            left: 50%;
-
-            min-width: 100%;
-            min-height: 100%;
-
-            width: auto;
-            height: auto;
-
-            transform: translate(-48%, -50%) scale(1.15);
-
-            object-fit: cover;
-            object-position: center center;
-
-            z-index: -2;
-        }}
-
-        #overlay {{
-            position: fixed;
-            top: 0;
-            left: 0;
-
-            width: 100vw;
-            height: 100vh;
-
-            background: rgba(0,0,0,0.55);
-            z-index: -1;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
         }}
 
         h1, h2, h3, h4, h5, h6,
@@ -68,7 +48,7 @@ def adicionar_background():
         }}
 
         .stTextInput input {{
-            background: rgba(255,255,255,0.9);
+            background: rgba(255,255,255,0.90);
             color: black;
             border-radius: 12px;
         }}
@@ -76,53 +56,35 @@ def adicionar_background():
         .stButton > button {{
             width: 100%;
             height: 45px;
-
             background: #FFCB05;
             color: black;
-
             border: none;
             border-radius: 10px;
-
             font-weight: bold;
-            transition: all 0.3s ease;
+            transition: .3s;
         }}
 
         .stButton > button:hover {{
             background: #2A75BB;
             color: white;
-            transform: scale(1.02);
         }}
 
         .pokemon-card {{
-            background: rgba(0,0,0,0.70);
+            background: rgba(0,0,0,.70);
             backdrop-filter: blur(15px);
-
             border: 3px solid #FFCB05;
             border-radius: 20px;
-
             padding: 30px;
-
             max-width: 420px;
             margin: 30px auto;
-
             text-align: center;
             box-shadow: 0 0 25px rgba(255,203,5,.4);
         }}
 
-        .pokemon-card img {{
-            image-rendering: pixelated;
-        }}
         </style>
-
-        <video autoplay muted loop playsinline id="video-background">
-            <source src="data:video/mp4;base64,{video_base64}" type="video/mp4">
-        </video>
-
-        <div id="overlay"></div>
         """,
         unsafe_allow_html=True
     )
-
 
 adicionar_background()
 
@@ -136,8 +98,10 @@ nome = st.text_input(
 )
 
 if st.button("Buscar Pokémon"):
+
     if not nome.strip():
         st.warning("Digite o nome de um Pokémon.")
+
     else:
         try:
             resposta = requests.get(
@@ -154,31 +118,67 @@ if st.button("Buscar Pokémon"):
             else:
                 pokemon = resposta.json()
 
-                tipos = ", ".join(pokemon["tipos"])
-                habilidades = ", ".join(pokemon["habilidades"])
+                # Card de resultado
+                st.markdown("<div class='pokemon-card'>", unsafe_allow_html=True)
 
                 st.markdown(
                     f"""
-                    <div class="pokemon-card">
-                        <h2>{pokemon['nome'].capitalize()}</h2>
-
-                        <img src="{pokemon['imagem']}" width="220">
-
-                        <br><br>
-
-                        <b>ID:</b> {pokemon['id']}<br>
-                        <b>Altura:</b> {pokemon['altura']}<br>
-                        <b>Peso:</b> {pokemon['peso']}<br>
-                        <b>Tipos:</b> {tipos}<br>
-                        <b>Habilidades:</b> {habilidades}
-                    </div>
+                    <h1 style="text-align:center; color:white;">
+                        {pokemon['nome'].capitalize()}
+                    </h1>
                     """,
                     unsafe_allow_html=True
                 )
 
+                # Imagem centralizada
+                col1, col2, col3 = st.columns([1, 2, 1])
+
+                with col2:
+                    st.image(
+                        pokemon["imagem"],
+                        width=220
+                    )
+
+                st.divider()
+
+                # Informações
+                col1, col2 = st.columns(2)
+
+                with col1:
+                    st.metric(
+                        label="🆔 ID",
+                        value=pokemon["id"]
+                    )
+
+                    st.metric(
+                        label="📏 Altura",
+                        value=pokemon["altura"]
+                    )
+
+                with col2:
+                    st.metric(
+                        label="⚖️ Peso",
+                        value=pokemon["peso"]
+                    )
+
+                    st.metric(
+                        label="🏷️ Tipos",
+                        value=", ".join(
+                            tipo.capitalize()
+                            for tipo in pokemon["tipos"]
+                        )
+                    )
+
+                st.markdown("### ✨ Habilidades")
+
+                for habilidade in pokemon["habilidades"]:
+                    st.write(f"• {habilidade.capitalize()}")
+
+                st.markdown("</div>", unsafe_allow_html=True)
+
         except requests.exceptions.ConnectionError:
             st.error(
-                "Não foi possível conectar à API FastAPI. "
+                "Não foi possível conectar à API FastAPI.\n\n"
                 "Verifique se ela está rodando."
             )
 

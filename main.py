@@ -18,9 +18,7 @@ async def buscar_pokemon(nome: str):
 
     if resposta.status_code == 404:
         raise HTTPException(status_code=404, detail="Pokémon não encontrado")
-    else:
-        raise HTTPException(status_code=500, detail="Erro no servidor, por favor tente novamente mais tarde.")
-
+   
     dados = resposta.json()
 
     return {
