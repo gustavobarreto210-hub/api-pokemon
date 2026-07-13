@@ -160,7 +160,7 @@ if st.button("Buscar Pokémon"):
             else:
                 pokemon = resposta.json()
 
-                st.markdown("<div class='pokemon-card'>", unsafe_allow_html=True)
+                
 
             st.markdown(
             f"""
