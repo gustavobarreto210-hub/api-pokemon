@@ -15,7 +15,7 @@ async def erro_global_exception_handler(request: Request, exc: Exception):
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         content={
             "erro": "Erro Interno",
-            "detalhes": "Ocorreu um erro inesperado no servidor. Tente novamente mais tarde."
+            "detalhes": f"Ocorreu um erro inesperado no servidor. Tente novamente mais tarde. Erro: {str(exc)}"
         }
     )
 
@@ -76,8 +76,9 @@ async def buscar_pokemon(nome: str):
         return {
             "id": dados["id"],
             "nome": dados["name"],
-            "altura": dados["height"],
-            "peso": dados["weight"],
+            # CORREÇÃO: Divisão por 10 para converter decímetros para metros e hectogramas para kg
+            "altura": dados["height"] / 10,
+            "peso": dados["weight"] / 10,
             "tipos": [tipo["type"]["name"] for tipo in dados["types"]],
             "habilidades": [
                 habilidade["ability"]["name"]
@@ -89,8 +90,8 @@ async def buscar_pokemon(nome: str):
                            .get("official-artwork", {})
                            .get("front_default")
         }
-    except (ValueError, KeyError):
-        # Trata casos onde o JSON retornado veio corrompido ou modificaram as chaves esperadas
+    except (ValueError, KeyError, TypeError):
+        # Adicionado TypeError caso alguma operação matemática ou iteração falhe por tipo nulo
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail="A estrutura de dados retornada pelo servidor externo é inválida ou incompatível."

@@ -1,6 +1,5 @@
-from pathlib import Path
 import base64
-from fastapi import background
+from pathlib import Path
 import requests
 import streamlit as st
 
@@ -17,7 +16,6 @@ IMAGE_PATH = BASE_DIR / "assets" / "pokemon.jpg"
 
 
 def adicionar_background():
-
     if not IMAGE_PATH.exists():
         st.error(f"Imagem não encontrada em: {IMAGE_PATH}")
         st.stop()
@@ -28,7 +26,6 @@ def adicionar_background():
     st.markdown(
         f"""
         <style>
-
         .stApp {{
             background:
                 linear-gradient(
@@ -36,25 +33,32 @@ def adicionar_background():
                     rgba(0,0,0,0.55)
                 ),
                 url("data:image/jpeg;base64,{img_base64}");
-
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
             background-attachment: fixed;
         }}
-
         h1, h2, h3, h4, h5, h6,
         p, span, label {{
             color: white !important;
         }}
-
-        .stTextInput input {{
-            background: rgba(255,255,255,.92);
+        
+        /* CORREÇÃO AQUI: Garante de forma abrangente que a letra fique preta ao digitar na barra */
+        .stTextInput input, 
+        .stTextInput > div > div > input,
+        .stTextInput input:focus {{
+            color: #000000 !important; /* Letra preta ao digitar */
+            background: rgba(255,255,255,.92) !important;
             border-radius:14px;
             height:55px;
             font-size:20px;
             text-align:center;
             font-weight:bold;
+        }}
+        
+        /* Ajusta o texto de exemplo (placeholder) para um cinza escuro legível */
+        .stTextInput input::placeholder {{
+            color: #555555 !important;
         }}
 
         .stButton > button {{
@@ -67,50 +71,35 @@ def adicionar_background():
             font-weight:bold;
             transition:.25s;
         }}
-
         .stButton > button:hover {{
             background:#2a75bb;
             color:white;
             transform:scale(1.02);
         }}
-
         .pokemon-card {{
             background:rgba(15,15,15,.72);
-
             backdrop-filter:blur(18px);
-
             border:3px solid #ffcb05;
-
             border-radius:25px;
-
             padding:35px;
-
             margin-top:35px;
-
-             box-shadow:0 0 40px rgba(255,203,5,.45);
+            box-shadow:0 0 40px rgba(255,203,5,.45);
         }}
-        .badge{{
-
+        .badge {{
             display:inline-block;
-
             background:#ffcb05;
-
             color:black;
-
             font-weight:bold;
-
             padding:6px 14px;
-
             margin:4px;
-
             border-radius:999px;
-                
         }}
-        .info-box{{
+        .info-box {{
             background:rgba(255,255,255,.08);
             border-radius:15px;
             padding:15px;
             text-align:center;
+            margin-bottom:15px;
         }}
         </style>
         """,
@@ -124,7 +113,6 @@ st.markdown(
     <h1 style='text-align:center;font-size:55px;'>
         ⚡ Pokédex
     </h1>
-
     <h4 style='text-align:center;color:white;'>
         Pesquise qualquer Pokémon
     </h4>
@@ -137,103 +125,93 @@ nome = st.text_input(
     placeholder="Ex: Pikachu"
 )
 
-if st.button("Buscar Pokémon"):
+# Inicializa a variável para evitar NameError nas colunas abaixo
+pokemon = None
 
+if st.button("Buscar Pokémon"):
     if not nome.strip():
         st.warning("Digite o nome de um Pokémon.")
-
     else:
-        try:
-            resposta = requests.get(
-                f"{API_URL}/pokemon/{nome.lower().strip()}",
-                timeout=10
-            )
-        except requests.RequestException:
-            st.error("Erro ao consultar a API.")
-        else:
-            if resposta.status_code == 404:
-                st.error("Pokémon não encontrado.")
-
-            elif resposta.status_code != 200:
-                st.error("Erro ao consultar a API.")
-
-            else:
-                pokemon = resposta.json()
-
+        with st.spinner("Buscando na Pokédex..."):
+            try:
+                resposta = requests.get(
+                    f"{API_URL}/pokemon/{nome.lower().strip()}",
+                    timeout=10
+                )
                 
+                if resposta.status_code == 404:
+                    st.error("Pokémon não encontrado na base de dados.")
+                elif resposta.status_code != 200:
+                    st.error(f"O servidor retornou um erro inesperado (Status {resposta.status_code}).")
+                else:
+                    pokemon = resposta.json()
 
-            st.markdown(
+            except requests.Timeout:
+                st.error("O servidor demorou muito para responder. Tente novamente.")
+            except requests.ConnectionError:
+                st.error("Não foi possível conectar à API. Certifique-se de que o backend FastAPI está rodando.")
+            except requests.RequestException:
+                st.error("Erro crítico de comunicação com a API.")
+
+# Toda a interface gráfica de exibição só deve renderizar se o objeto 'pokemon' existir com sucesso
+if pokemon:
+    
+    st.markdown(
+        f"""
+        <h1 style="text-align:center; color:#ffcb05 !important;">
+             {pokemon['nome'].capitalize()}
+        </h1>
+        """,
+        unsafe_allow_html=True
+    )
+
+    c1, c2, c3 = st.columns([1, 2, 1])
+    with c2:
+        # Garante tratamento caso a URL da imagem falhe ou venha vazia
+        if pokemon.get("imagem"):
+            st.image(pokemon["imagem"], width=260)
+        else:
+            st.info("Imagem não disponível")
+
+    st.markdown("---")
+
+    col1, col2 = st.columns(2)
+    with col1:
+        st.markdown(
             f"""
-                <h1 style="text-align:center;">
-                     {pokemon['nome'].capitalize()}
-                </h1>
-                 """,
-                unsafe_allow_html=True
-            )
+            <div class='info-box'>
+                <h4>ID</h4>
+                <h2>#{pokemon['id']}</h2>
+            </div>
+            <div class='info-box'>
+                <h4>Altura</h4>
+                <h2>{pokemon['altura']} m</h2>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
 
-c1, c2, c3 = st.columns([1,2,1])
+    with col2:
+        st.markdown(
+            f"""
+            <div class='info-box'>
+                <h4>Peso</h4>
+                <h2>{pokemon['peso']} kg</h2>
+            </div>
+            <div class='info-box'>
+                <h4>Tipo</h4>
+                <h2>{', '.join(pokemon['tipos']).title()}</h2>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
 
-with c2:
-    st.image(
-        pokemon["imagem"],
-        width=260
-    )
-
-st.markdown("---")
-
-col1, col2 = st.columns(2)
-
-with col1:
-
-    st.markdown(
-        f"""
-        <div class='info-box'>
-        <h4>ID</h4>
-        <h2>{pokemon['id']}</h2>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-    st.markdown(
-        f"""
-        <div class='info-box'>
-        <h4>Altura</h4>
-        <h2>{pokemon['altura']}</h2>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-with col2:
-
-    st.markdown(
-        f"""
-        <div class='info-box'>
-        <h4>Peso</h4>
-        <h2>{pokemon['peso']}</h2>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-    st.markdown(
-        f"""
-        <div class='info-box'>
-        <h4>Tipo</h4>
-        <h2>{', '.join(pokemon['tipos']).title()}</h2>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-st.markdown("## ✨ Habilidades")
-
-habilidades = ""
-
-for habilidade in pokemon["habilidades"]:
-    habilidades += f"<span class='badge'>{habilidade.title()}</span>"
-
-st.markdown(habilidades, unsafe_allow_html=True)
-
-st.markdown("</div>", unsafe_allow_html=True)
+    st.markdown("### ✨ Habilidades")
+    habilidades_html = ""
+    for habilidade in pokemon.get("habilidades", []):
+        habilidades_html += f"<span class='badge'>{habilidade.title()}</span>"
+    
+    st.markdown(habilidades_html, unsafe_allow_html=True)
+    
+    # Fechamento seguro da div 'pokemon-card'
+    st.markdown("</div>", unsafe_allow_html=True)
