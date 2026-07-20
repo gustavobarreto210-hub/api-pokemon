@@ -1,7 +1,7 @@
 import base64
 from pathlib import Path
-import requests
-import streamlit as st
+import requests # type: ignore
+import streamlit as st # type: ignore
 
 st.set_page_config(
     page_title="Pokédex",
